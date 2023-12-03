@@ -3,8 +3,28 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct {
+  int red;
+  int green;
+  int blue;
+} CubeSet;
+
+typedef struct {
+  int id;
+  int count;
+  CubeSet **cubes;
+} Game;
+
+typedef struct {
+  int id;
+  CubeSet cubeset;
+} MaxGameData;
+
+typedef enum { red, green, blue } Color;
+
 const size_t BUFFER_MAX_LENGTH = 1024;
-const char *DATA_FILENAME = "text.txt";
+const char *DATA_FILENAME = "input.txt";
+CubeSet FILTER = {.red = 12, .green = 13, .blue = 14};
 
 typedef struct {
   char **values;
@@ -21,18 +41,6 @@ void destroy_file_contents(FileContents *contents);
 char **split_string(const char *str, const char *delimit, int *total_count);
 char *trim_string(char *c);
 
-typedef struct {
-  int red;
-  int green;
-  int blue;
-} CubeSet;
-
-typedef struct {
-  int id;
-  int count;
-  CubeSet **cubes;
-} Game;
-
 Game **parse_games(FileContents *contents);
 Game *parse_game(const char *str);
 void print_game(Game *game);
@@ -41,20 +49,39 @@ void destroy_game(Game *game);
 CubeSet *parse_cube_set(const char *str);
 void print_cube_set(CubeSet *cubeset);
 
+CubeSet get_max_cubeset_values(Game *game);
+MaxGameData **get_max_game_data(Game **games, int count);
+MaxGameData **get_max_game_data_filtering(MaxGameData **data, int count,
+                                          CubeSet filter, int *total_found);
+void print_max_game_data(MaxGameData **max_game_data, int count);
+
+int *get_game_ids_filtering(Game **games, int count, CubeSet filter,
+                            int *total_found);
+int calculate_sum_ids(int *ids, int count);
+
 int main() {
   printf("Advent of Code 2023 - Day 2\n");
   FileContents *contents = read_file_contents(DATA_FILENAME);
-  print_file_contents(contents);
-
   Game **games = parse_games(contents);
-  for (size_t i = 0; i < contents->count; ++i) {
-    print_game(games[i]);
+  if (contents == NULL || games == NULL) {
+    return 1;
   }
+
+  int total_ids;
+  int *ids = get_game_ids_filtering(games, contents->count, FILTER, &total_ids);
+
+  if (ids == NULL) {
+    return 2;
+  }
+
+  int total = calculate_sum_ids(ids, total_ids);
+  printf("total: %d\n", total);
 
   for (size_t i = 0; i < contents->count; ++i) {
     destroy_game(games[i]);
   }
   free(games);
+  free(ids);
 
   destroy_file_contents(contents);
   return 0;
@@ -334,4 +361,159 @@ void print_cube_set(CubeSet *cubeset) {
   }
   printf("red: %d, green: %d, blue: %d\n", cubeset->red, cubeset->green,
          cubeset->blue);
+}
+
+CubeSet get_max_cubeset_values(Game *game) {
+  if (game == NULL || game->count == 0) {
+    CubeSet cubeset;
+    return cubeset;
+  }
+
+  CubeSet max = {.red = 0, .green = 0, .blue = 0};
+  for (size_t i = 0; i < game->count; ++i) {
+    CubeSet current = *game->cubes[i];
+    if (current.red > max.red) {
+      max.red = current.red;
+    }
+    if (current.green > max.green) {
+      max.green = current.green;
+    }
+    if (current.blue > max.blue) {
+      max.blue = current.blue;
+    }
+  }
+
+  return max;
+}
+
+MaxGameData **get_max_game_data(Game **games, int count) {
+  if (games == NULL || count < 0) {
+    return NULL;
+  }
+
+  int total = 0;
+
+  // Reserve enough space for entire list
+  MaxGameData **result = malloc(sizeof(MaxGameData *) * count);
+
+  for (size_t i = 0; i < count; ++i) {
+    CubeSet cubeset = get_max_cubeset_values(games[i]);
+    MaxGameData *res = malloc(sizeof(MaxGameData));
+    res->id = games[i]->id;
+    res->cubeset = cubeset;
+    result[i] = res;
+    total += 1;
+  }
+
+  // Resize to fit only found values
+  MaxGameData **temp = realloc(result, sizeof(MaxGameData *) * total + 1);
+  if (temp == NULL) {
+    free(result);
+    return NULL;
+  }
+
+  result = temp;
+
+  return result;
+}
+
+MaxGameData **get_max_game_data_filtering(MaxGameData **data, int count,
+                                          CubeSet filter, int *total_fount) {
+  if (data == NULL) {
+    return NULL;
+  }
+
+  int total = 0;
+
+  // Reserve enough space for entire list
+  MaxGameData **result = malloc(sizeof(MaxGameData *) * count);
+  for (size_t i = 0; i < count; ++i) {
+    MaxGameData *current = data[i];
+    if (filter.red >= current->cubeset.red &&
+        filter.green >= current->cubeset.green &&
+        filter.blue >= current->cubeset.blue) {
+      MaxGameData *new = malloc(sizeof(MaxGameData));
+      new->id = data[i]->id;
+      new->cubeset = data[i]->cubeset;
+      result[total] = new;
+      total += 1;
+    }
+  }
+
+  // Resize to fit only found values
+  MaxGameData **temp = realloc(result, sizeof(MaxGameData *) * total + 1);
+  if (temp == NULL) {
+    free(result);
+    return NULL;
+  }
+
+  result = temp;
+  *total_fount = total;
+
+  return result;
+}
+
+void print_max_game_data(MaxGameData **max_game_data, int count) {
+  if (max_game_data == NULL) {
+    return;
+  }
+
+  printf("total: %d\n", count);
+  for (size_t i = 0; i < count; ++i) {
+    printf("id: %d | ", max_game_data[i]->id);
+    print_cube_set(&max_game_data[i]->cubeset);
+  }
+}
+
+int *get_game_ids_filtering(Game **games, int count, CubeSet filter,
+                            int *total_fount) {
+  if (games == NULL || count < 0) {
+    return NULL;
+  }
+
+  int total_filtered;
+  MaxGameData **all_max_data = get_max_game_data(games, count);
+  MaxGameData **filtered_max_data =
+      get_max_game_data_filtering(all_max_data, count, filter, &total_filtered);
+
+  if (all_max_data == NULL || filtered_max_data == NULL) {
+    return NULL;
+  }
+
+  printf("---- all_max_data ----\n");
+  print_max_game_data(all_max_data, count);
+
+  printf("---- filtered_max_data ----\n");
+  print_max_game_data(filtered_max_data, total_filtered);
+
+  int *result = malloc(sizeof(int) * total_filtered);
+  for (size_t i = 0; i < total_filtered; ++i) {
+    result[i] = filtered_max_data[i]->id;
+  }
+  *total_fount = total_filtered;
+
+  for (size_t i = 0; i < count; ++i) {
+    free(all_max_data[i]);
+  }
+  free(all_max_data);
+
+  for (size_t i = 0; i < total_filtered; ++i) {
+    free(filtered_max_data[i]);
+  }
+  free(filtered_max_data);
+
+  return result;
+}
+
+int calculate_sum_ids(int *ids, int count) {
+  if (ids == NULL) {
+    return 0;
+  }
+
+  int total = 0;
+  for (size_t i = 0; i < count; ++i) {
+    total += ids[i];
+  }
+
+  return total;
 }

@@ -16,6 +16,7 @@ const char *ENCODED_NUMBERS[] = {
 
 typedef struct {
   char **values;
+  FILE *fp;
   int count;
 } file_contents_t;
 
@@ -31,11 +32,11 @@ typedef struct {
 
 int compare(const void *a, const void *b);
 
-int get_file_total_lines(FILE *fp);
 int get_numbers_count(char *str);
 int get_encoded_numbers_count(char *str);
 
-file_contents_t *read_file_contents(FILE *fp);
+int get_file_total_lines(FILE *fp);
+file_contents_t *read_file_contents(const char *filename);
 void print_file_contents(file_contents_t *contents);
 void destroy_file_contents(file_contents_t *contents);
 
@@ -48,18 +49,12 @@ int calculate_calibration_value(file_contents_t *contents);
 int calculate_calibration_value_v2(file_contents_t *contents);
 
 int main() {
-  FILE *fp;
-
-  fp = fopen(DATA_FILENAME, "r");
-
-  if (fp == NULL) {
-    exit(1);
-  }
-
-  file_contents_t *contents = read_file_contents(fp);
+  file_contents_t *contents = read_file_contents(DATA_FILENAME);
   if (!contents) {
-    exit(2);
+    return 1;
   }
+
+  print_file_contents(contents);
 
   int total_part_1 = calculate_calibration_value(contents);
   printf("part 1 | total: %d\n", total_part_1);
@@ -68,7 +63,6 @@ int main() {
   printf("part 2 | total: %d\n", total_part_2);
 
   destroy_file_contents(contents);
-  fclose(fp);
 
   return 0;
 }
@@ -77,23 +71,6 @@ int compare(const void *a, const void *b) {
   found_number_item_t *val_a = (found_number_item_t *)a;
   found_number_item_t *val_b = (found_number_item_t *)b;
   return val_a->index - val_b->index;
-}
-
-int get_file_total_lines(FILE *fp) {
-  if (fp == NULL) {
-    return 0;
-  }
-
-  int total_lines = 0;
-  char buffer[BUFFER_MAX_LENGTH];
-  while (fgets(buffer, BUFFER_MAX_LENGTH, fp) != NULL) {
-    total_lines += 1;
-  }
-
-  // Reset cursor
-  fseek(fp, 0, SEEK_SET);
-
-  return total_lines;
 }
 
 int get_numbers_count(char *str) {
@@ -131,7 +108,29 @@ int get_encoded_numbers_count(char *str) {
   return total_numbers;
 }
 
-file_contents_t *read_file_contents(FILE *fp) {
+int get_file_total_lines(FILE *fp) {
+  if (fp == NULL) {
+    return 0;
+  }
+
+  int total_lines = 0;
+  char buffer[BUFFER_MAX_LENGTH];
+  while (fgets(buffer, BUFFER_MAX_LENGTH, fp) != NULL) {
+    total_lines += 1;
+  }
+
+  // Reset cursor
+  fseek(fp, 0, SEEK_SET);
+
+  return total_lines;
+}
+
+file_contents_t *read_file_contents(const char *filename) {
+  FILE *fp = fopen(filename, "r");
+
+  if (fp == NULL) {
+    exit(1);
+  }
   if (fp == NULL) {
     return NULL;
   }
@@ -156,6 +155,7 @@ file_contents_t *read_file_contents(FILE *fp) {
 
   file_contents_t *result = malloc(sizeof(file_contents_t));
   result->values = values;
+  result->fp = fp;
   result->count = total_lines;
 
   return result;
@@ -173,6 +173,8 @@ void print_file_contents(file_contents_t *contents) {
     int length = strlen(str);
     printf("[%d] %s", length, str);
   }
+
+  printf("\n");
 }
 
 void destroy_file_contents(file_contents_t *contents) {
@@ -182,6 +184,10 @@ void destroy_file_contents(file_contents_t *contents) {
 
   if (contents->values != NULL) {
     free(contents->values);
+  }
+
+  if (contents->fp != NULL) {
+    fclose(contents->fp);
   }
 
   free(contents);
@@ -250,19 +256,9 @@ found_numbers_t *read_encoded_numbers_in_string(char *str) {
 
   qsort(all_items, total_numbers, sizeof(found_number_item_t), compare);
 
-  // Only keep first and last values found, we don't care about anything in
-  // between
-  found_number_item_t *items = malloc(sizeof(found_number_item_t) * 2);
-  items[0].index = all_items[0].index;
-  items[0].value = all_items[0].value;
-  items[1].index = all_items[total_numbers - 1].index;
-  items[1].value = all_items[total_numbers - 1].value;
-
-  free(all_items);
-
   found_numbers_t *result = malloc(sizeof(found_numbers_t));
-  result->values = items;
-  result->count = 2;
+  result->values = all_items;
+  result->count = total_numbers;
 
   return result;
 }

@@ -1,6 +1,7 @@
 #include <complex.h>
 #include <ctype.h>
 #include <iso646.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,6 +45,7 @@ void print_found_numbers(found_numbers_t *numbers);
 void destroy_found_numbers(found_numbers_t *data);
 
 int calculate_calibration_value(file_contents_t *contents);
+int calculate_calibration_value_v2(file_contents_t *contents);
 
 int main() {
   FILE *fp;
@@ -59,10 +61,11 @@ int main() {
     exit(2);
   }
 
-  print_file_contents(contents);
+  int total_part_1 = calculate_calibration_value(contents);
+  printf("part 1 | total: %d\n", total_part_1);
 
-  int total = calculate_calibration_value(contents);
-  printf("part 1 | total: %d\n", total);
+  int total_part_2 = calculate_calibration_value_v2(contents);
+  printf("part 2 | total: %d\n", total_part_2);
 
   destroy_file_contents(contents);
   fclose(fp);
@@ -205,7 +208,7 @@ found_numbers_t *read_numbers_in_string(char *str) {
     if (isdigit(x) != 0) {
       // Ascii offset
       int value = (int)x - '0';
-      items[index].index = index;
+      items[index].index = i;
       items[index].value = value;
       index += 1;
     }
@@ -228,29 +231,38 @@ found_numbers_t *read_encoded_numbers_in_string(char *str) {
     return NULL;
   }
 
-  found_number_item_t *items =
+  found_number_item_t *all_items =
       malloc(sizeof(found_number_item_t) * total_numbers);
 
   int index = 0;
-
   for (size_t i = 0; i < 10; ++i) {
     const char *target = ENCODED_NUMBERS[i];
     const char *found = strstr(str, target);
 
     while (found != NULL) {
       int offset = found - str;
-      int value = i;
-      items[index].index = offset;
-      items[index].value = i;
-
+      all_items[index].index = offset;
+      all_items[index].value = i;
       found = strstr(found + strlen(target), target);
-      total_numbers += 1;
+      index += 1;
     }
   }
 
+  qsort(all_items, total_numbers, sizeof(found_number_item_t), compare);
+
+  // Only keep first and last values found, we don't care about anything in
+  // between
+  found_number_item_t *items = malloc(sizeof(found_number_item_t) * 2);
+  items[0].index = all_items[0].index;
+  items[0].value = all_items[0].value;
+  items[1].index = all_items[total_numbers - 1].index;
+  items[1].value = all_items[total_numbers - 1].value;
+
+  free(all_items);
+
   found_numbers_t *result = malloc(sizeof(found_numbers_t));
   result->values = items;
-  result->count = total_numbers;
+  result->count = 2;
 
   return result;
 }
@@ -285,20 +297,68 @@ int calculate_calibration_value(file_contents_t *contents) {
   }
 
   int total = 0;
-  found_numbers_t **numbers =
-      malloc(sizeof(found_numbers_t *) * contents->count);
-
   for (size_t i = 0; i < contents->count; ++i) {
     found_numbers_t *found = read_numbers_in_string(contents->values[i]);
 
-    if (found != NULL) {
-      numbers[i] = found;
+    if (found == NULL) {
+      return 0;
     }
 
     int first = found->values[0].value;
     int last = found->values[found->count - 1].value;
     int value = first * 10 + last;
 
+    total += value;
+  }
+
+  return total;
+}
+
+int calculate_calibration_value_v2(file_contents_t *contents) {
+  if (contents == NULL) {
+    return 0;
+  }
+
+  int total = 0;
+  for (size_t i = 0; i < contents->count; ++i) {
+    found_numbers_t *found = read_numbers_in_string(contents->values[i]);
+    found_numbers_t *found_encoded =
+        read_encoded_numbers_in_string(contents->values[i]);
+
+    if (found == NULL && found_encoded == NULL) {
+      return 0;
+    }
+
+    int first_index = INT_MAX;
+    int last_index = 0;
+    if (found != NULL && found->count > 0) {
+      first_index = found->values[0].index;
+      last_index = found->values[found->count - 1].index;
+    }
+
+    int first_index_encoded = INT_MAX;
+    int last_index_encoded = 0;
+    if (found_encoded != NULL && found_encoded->count > 0) {
+      first_index_encoded = found_encoded->values[0].index;
+      last_index_encoded =
+          found_encoded->values[found_encoded->count - 1].index;
+    }
+
+    int first_value;
+    int last_value;
+    if (first_index < first_index_encoded) {
+      first_value = found->values[0].value;
+    } else {
+      first_value = found_encoded->values[0].value;
+    }
+
+    if (last_index > last_index_encoded) {
+      last_value = found->values[found->count - 1].value;
+    } else {
+      last_value = found_encoded->values[found_encoded->count - 1].value;
+    }
+
+    int value = first_value * 10 + last_value;
     total += value;
   }
 

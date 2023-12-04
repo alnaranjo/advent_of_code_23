@@ -1,4 +1,5 @@
 #include <file.h>
+#include <stdlib.h>
 #include <str.h>
 #include <string.h>
 
@@ -7,8 +8,6 @@ typedef struct {
     int y;
     char *value;
 } DataPoint;
-
-void print_split(char **split, int count);
 
 int main(int argc, char **argv) {
     if (argc != 2) {
@@ -25,29 +24,24 @@ int main(int argc, char **argv) {
         return 2;
     }
 
-    print_file_contents(fileContents);
-
-    for (size_t i = 0; i < fileContents->count; ++i) {
-        int total_found = 0;
-        char **split = split_string(fileContents->values[i], ".", &total_found);
-        if (split == NULL || total_found < 0) {
+    SplitStr **results = malloc(sizeof(SplitStr *) * fileContents->count);
+    for (int i = 0; i < fileContents->count; ++i) {
+        SplitStr *split = split_str(fileContents->values[i], ".");
+        if (split == NULL) {
             continue;
         }
-        print_split(split, total_found);
+        results[i] = split;
     }
+
+    for (int i = 0; i < fileContents->count; ++i) {
+        print_split_str(results[i]);
+    }
+    for (int i = 0; i < fileContents->count; ++i) {
+        destroy_split_str(results[i]);
+    }
+    free(results);
 
     destroy_file_contents(fileContents);
 
     return 0;
-}
-
-void print_split(char **split, int count) {
-    if (split == NULL) {
-        return;
-    }
-
-    printf("total: %d\n", count);
-    for (size_t i = 0; i < count; ++i) {
-        printf("[%zu] %s\n", strlen(split[i]), split[i]);
-    }
 }

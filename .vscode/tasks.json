@@ -5,19 +5,11 @@
       "label": "build",
       "type": "shell",
       "command": "./build.sh",
-      "args": ["${input:build_target}"],
+      "args": ["day_3"],
       "group": {
         "kind": "build",
         "isDefault": true
       }
-    }
-  ],
-  "inputs": [
-    {
-      "id": "build_target",
-      "description": "Build target",
-      "default": "",
-      "type": "promptString"
     }
   ]
 }

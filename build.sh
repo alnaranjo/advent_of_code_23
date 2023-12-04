@@ -17,7 +17,7 @@ ASSEMBLY="main"
 LIB_C_FILESNAMES=$(find ./$UTILS_DIR -type f -name "*.c")
 C_FILENAMES=$(find ./$SRC_DIR -type f -name "*.c")
 
-COMPILER_FLAGS="-g -std=c17"
+COMPILER_FLAGS="-g -Wall -Wextra -std=c17"
 INCLUDE_FLAGS="-I$SRC_DIR/ -I$UTILS_DIR/"
 
 mkdir -p $BUILD_DIR
@@ -26,3 +26,4 @@ echo clang $LIB_C_FILESNAMES $C_FILENAMES $COMPILER_FLAGS -o ./$BUILD_DIR/$ASSEM
 clang $LIB_C_FILESNAMES $C_FILENAMES $COMPILER_FLAGS -o ./$BUILD_DIR/$ASSEMBLY $INCLUDE_FLAGS
 echo "Build succeded"
 echo "Exec location: ./$BUILD_DIR/$ASSEMBLY"
+echo ""

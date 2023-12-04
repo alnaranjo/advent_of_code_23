@@ -5,7 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-const size_t BUFFER_MAX_LENGTH = 1024;
+const size_t BUFFER_MAX_LENGTH = 128;
+const char *DATA_FILENAME = "input.txt";
 
 const char *ENCODED_NUMBERS[] = {
     "zero", "one", "two",   "three", "four",
@@ -47,8 +48,7 @@ int calculate_calibration_value(file_contents_t *contents);
 int main() {
   FILE *fp;
 
-  const char *filename = "input.txt";
-  fp = fopen(filename, "r");
+  fp = fopen(DATA_FILENAME, "r");
 
   if (fp == NULL) {
     exit(1);
@@ -59,8 +59,10 @@ int main() {
     exit(2);
   }
 
+  print_file_contents(contents);
+
   int total = calculate_calibration_value(contents);
-  printf("%d", total);
+  printf("part 1 | total: %d\n", total);
 
   destroy_file_contents(contents);
   fclose(fp);
@@ -141,10 +143,7 @@ file_contents_t *read_file_contents(FILE *fp) {
 
   char buffer[BUFFER_MAX_LENGTH];
   while (fgets(buffer, BUFFER_MAX_LENGTH, fp) != NULL) {
-    int length = strlen(buffer);
-    char *line = malloc(sizeof(char) * length);
-    strcpy(line, buffer);
-
+    char *line = strdup(buffer);
     values[index] = line;
     index += 1;
   }

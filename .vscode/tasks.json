@@ -4,17 +4,20 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "clang",
-      "args": [
-        "${file}",
-        "-o",
-        "${fileDirname}/${fileBasenameNoExtension}.out",
-        "-g"
-      ],
+      "command": "./build.sh",
+      "args": ["${input:build_target}"],
       "group": {
         "kind": "build",
         "isDefault": true
       }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "build_target",
+      "description": "Build target",
+      "default": "",
+      "type": "promptString"
     }
   ]
 }

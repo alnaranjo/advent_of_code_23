@@ -1,0 +1,13 @@
+{
+  "configurations": [
+    {
+      "name": "Mac",
+      "includePath": ["${workspaceFolder}/**", "${workspaceFolder}/utils/**"],
+      "compilerPath": "/usr/bin/clang",
+      "cStandard": "c17",
+      "intelliSenseMode": "macos-clang-arm64",
+      "macFrameworkPath": ["/System/Library/Frameworks", "/Library/Frameworks"]
+    }
+  ],
+  "version": 4
+}

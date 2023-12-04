@@ -4,11 +4,10 @@
 #include <stdio.h>
 
 typedef struct {
-  char **values;
-  FILE *fp;
-  int count;
+    char **values;
+    FILE *fp;
+    int count;
 } FileContents;
-
 
 int get_file_total_lines(FILE *fp);
 FileContents *read_file_contents(const char *filename);

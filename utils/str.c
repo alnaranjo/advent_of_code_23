@@ -65,7 +65,7 @@ void print_split(char **split, int count) {
     }
 
     printf("total: %d\n", count);
-    for (size_t i = 0; i < count; ++i) {
+    for (int i = 0; i < count; ++i) {
         printf("[%zu] %s\n", strlen(split[i]), split[i]);
     }
 }
@@ -137,7 +137,7 @@ void print_split_str(SplitStr *split) {
     }
 
     printf("total: %d\n", split->count);
-    for (size_t i = 0; i < split->count; ++i) {
+    for (int i = 0; i < split->count; ++i) {
         printf("[%d] %s\n", split->indexes[i], split->values[i]);
     }
 }

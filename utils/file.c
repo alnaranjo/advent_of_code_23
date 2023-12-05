@@ -64,7 +64,7 @@ void print_file_contents(FileContents *contents) {
 
     printf("total_lines: %d\n", contents->count);
 
-    for (size_t i = 0; i < contents->count; ++i) {
+    for (int i = 0; i < contents->count; ++i) {
         char *str = contents->values[i];
         int length = strlen(str);
         printf("[%d] %s", length, str);

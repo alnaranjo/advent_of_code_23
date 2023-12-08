@@ -1,8 +1,11 @@
 #include <file.h>
+#include <set.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <str.h>
 #include <string.h>
+
+#define BUFFER_MAX_LENGTH 128
 
 typedef struct {
     int id;
@@ -19,10 +22,14 @@ void destroy_card(Card *card);
 int *parse_numbers(char *str, int *total_parsed);
 int calculate_cards_points(Card **cards, int total);
 int calculate_card_points(Card *card);
+int calculate_total_winning_numbers(Card *card);
+int *calculate_total_cards_won(Card **cards, int total);
 void print_cards(Card **cards, int total);
 void print_card(Card card);
 
 int main(int argc, char **argv) {
+    printf("Day 4\n");
+
     if (argc != 2) {
         fprintf(stderr, "ERROR: Missing data filename\n");
         printf("Ussage: ./main <data_filename>\n");
@@ -45,8 +52,21 @@ int main(int argc, char **argv) {
     }
 
     int total_part_1 = calculate_cards_points(cards, total_cards);
-    printf("Day 4 | part_1_total: %d\n", total_part_1);
+    printf("part_1_total: %d\n", total_part_1);
 
+    int *total_won_cards = calculate_total_cards_won(cards, total_cards);
+    if (total_won_cards == NULL) {
+        fprintf(stderr, "ERROR: Unable to calculate total cards won");
+        return 4;
+    }
+
+    int total_part_2 = 0;
+    for (int i = 0; i < total_cards; ++i) {
+        total_part_2 += total_won_cards[i];
+    }
+    printf("part_2_total: %d\n", total_part_2);
+
+    free(total_won_cards);
     destroy_cards(cards, total_cards);
     destroy_file_contents(file_contents);
 
@@ -106,11 +126,6 @@ Card *parse_card(char *str) {
     int *winning_numbers = parse_numbers(winning_numbers_data, &total_winning_numbers);
     int *playing_numbers = parse_numbers(playing_numbers_data, &total_playing_numbers);
 
-    free(playing_numbers_data);
-    free(winning_numbers_data);
-    free(numbers_info);
-    free(card_info);
-
     if (winning_numbers == NULL || playing_numbers == NULL) {
         return NULL;
     }
@@ -119,11 +134,17 @@ Card *parse_card(char *str) {
     if (card == NULL) {
         return NULL;
     }
+
     card->id = id;
     card->winning_numbers = winning_numbers;
     card->playing_numbers = playing_numbers;
     card->total_winning_numbers = total_winning_numbers;
     card->total_playing_numbers = total_playing_numbers;
+
+    free(playing_numbers_data);
+    free(winning_numbers_data);
+    free(numbers_info);
+    free(card_info);
 
     return card;
 }
@@ -212,6 +233,47 @@ int calculate_card_points(Card *card) {
     }
 
     return total_points;
+}
+
+int calculate_total_winning_numbers(Card *card) {
+    int total = 0;
+
+    for (int i = 0; i < card->total_playing_numbers; ++i) {
+        for (int j = 0; j < card->total_winning_numbers; ++j) {
+            if (card->playing_numbers[i] == card->winning_numbers[j]) {
+                ++total;
+            }
+        }
+    }
+
+    return total;
+}
+
+int *calculate_total_cards_won(Card **cards, int total) {
+    if (cards == NULL) {
+        return NULL;
+    }
+
+    int *total_winnings = malloc(sizeof(int) * total);
+
+    if (total_winnings == NULL) {
+        fprintf(stderr, "ERROR: Unable to alloc memory");
+        return NULL;
+    }
+
+    for (int i = 0; i < total; ++i) {
+        total_winnings[i] += 1;
+
+        int wins = calculate_total_winning_numbers(cards[i]);
+        int start = i + 1;
+        int end = start + wins;
+
+        for (int j = start; j < end; ++j) {
+            total_winnings[j] += total_winnings[i];
+        }
+    }
+
+    return total_winnings;
 }
 
 void print_cards(Card **cards, int total) {

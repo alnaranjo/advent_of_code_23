@@ -5,7 +5,7 @@
       "label": "build",
       "type": "shell",
       "command": "./build.sh",
-      "args": ["day_4"],
+      "args": ["day_1"],
       "group": {
         "kind": "build",
         "isDefault": true

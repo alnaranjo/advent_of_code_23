@@ -9,7 +9,7 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceRoot}/bin/main",
-      "args": ["${workspaceRoot}/day_3/test.txt"],
+      "args": ["${workspaceRoot}/day_4/test.txt"],
       "stopAtEntry": false,
       "cwd": "${fileDirname}",
       "environment": [],
